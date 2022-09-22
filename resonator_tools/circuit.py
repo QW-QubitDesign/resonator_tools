@@ -323,24 +323,25 @@ class notch_port(circlefit, save_load, plotting, calibration):
 	
 	def do_calibration(self,f_data,z_data,ignoreslope=True,guessdelay=True,fixed_delay=None, Ql_guess=None, fr_guess=None):
 		'''
-		performs an automated calibration and tries to determine the prefactors a, alpha, delay
-		fr, Ql, and a possible slope are extra information, which can be used as start parameters for subsequent fits
-		see also "do_normalization"
-		the calibration procedure works for transmission line resonators as well
-		'''
+    performs an automated calibration and tries to determine the prefactors a, alpha, delay
+    fr, Ql, and a possible slope are extra information, which can be used as start parameters for subsequent fits
+    see also "do_normalization"
+    the calibration procedure works for transmission line resonators as well
+    '''
 		delay, params = self.get_delay(f_data,z_data,ignoreslope=ignoreslope,guess=guessdelay,delay=fixed_delay)
 		z_data = (z_data-params[1]*(f_data-params[4]))*np.exp(2.*1j*np.pi*delay*f_data)
 		xc, yc, r0 = self._fit_circle(z_data)
 		zc = np.complex(xc,yc)
-		if Ql_guess is None: Ql_guess=np.absolute(params[5]) 
-		if fr_guess is None: fr_guess=params[4] 
-		fitparams = self._phase_fit(f_data,self._center(z_data,zc),0.,Ql_guess,fr_guess) 
+		if Ql_guess is None: Ql_guess=np.absolute(params[5])
+		if fr_guess is None: fr_guess=params[4]
+		fitparams = self._phase_fit(f_data,self._center(z_data,zc),0.,Ql_guess,fr_guess)
 		theta, Ql, fr = fitparams
 		beta = self._periodic_boundary(theta+np.pi,np.pi)
 		offrespoint = np.complex((xc+r0*np.cos(beta)),(yc+r0*np.sin(beta)))
 		alpha = np.angle(offrespoint)
 		a = np.absolute(offrespoint)
-		return delay, a, alpha, fr, Ql, params[1], params[4]
+		Qc = Ql/(2*r0/a)
+		return delay, a, alpha, fr, Ql, Qc, theta, r0/a
 	
 	def do_normalization(self,f_data,z_data,delay,amp_norm,alpha,A2,frcal):
 		'''
